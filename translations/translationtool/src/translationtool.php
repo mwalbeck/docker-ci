@@ -320,31 +320,58 @@ class TranslatableApp {
 		$fakeFileContent = '';
 
 		foreach ($this->findTranslatableFiles(['.vue']) as $vueFile) {
-			$vueSource = file_get_contents($vueFile);
+			$vueSource = file($vueFile);
 			if ($vueSource === false) {
 				echo "Warning: could not read " . $vueFile . PHP_EOL;
 				continue;
 			}
 
-			// t
-			preg_match_all("/\Wt\s*\(\s*'([\w]+)',\s*'(.+)'/", $vueSource, $singleQuoteMatches);
-			preg_match_all("/\Wt\s*\(\s*\"([\w]+)\",\s*\"(.+)\"/", $vueSource, $doubleQuoteMatches);
-			preg_match_all("/\Wt\s*\(\s*\'([\w]+)\'\s*,\s*\`(.+)\`\s*\)/msU", $vueSource, $templateQuoteMatches);
-			$matches = array_merge($singleQuoteMatches[2], $doubleQuoteMatches[2], $templateQuoteMatches[2]);
-			foreach ($matches as $match) {
-				$fakeFileContent .= "t('" . $this->name . "', '" . preg_replace('/\s+/', ' ', $match) . "');" . PHP_EOL;
+			// t - Single Translations
+			$tRegexArray = [
+				"/\Wt\s*\(\s*'([\w]+)',\s*'(.+)'/", // Single Quotes
+				"/\Wt\s*\(\s*\"([\w]+)\",\s*\"(.+)\"/", // Double Quotes
+				"/\Wt\s*\(\s*\'([\w]+)\'\s*,\s*\`(.+)\`\s*\)/msU" // Template Quotes
+			];
+			foreach($tRegexArray as $regex) {
+				$regexMatches = preg_grep($regex, $vueSource);
+
+				foreach ($regexMatches as $lineNum => $match) {
+					// Check for comment in previous line. Either HTML or JS comment. HTML-Comments terminate with '-->', JS do not
+					if(preg_match("/\W(TRANSLATORS)\s(.+)(-->)/", $vueSource[$lineNum-1], $commentSplit)
+						|| preg_match("/\W(TRANSLATORS)\s(.+)/", $vueSource[$lineNum-1], $commentSplit)) {
+
+						// Insert comment
+						$fakeFileContent .= "// TRANSLATORS " . preg_replace('/\s+/', ' ', $commentSplit[2]) . PHP_EOL;
+					}
+
+					// Insert translation-function
+					preg_match($regex, $match, $matchSplit);
+					$fakeFileContent .= "t('" . $this->name . "', '" . preg_replace('/\s+/', ' ', $matchSplit[2]) . "');" . PHP_EOL;
+				}
 			}
 
-			// n
-			preg_match_all("/\Wn\s*\(\s*'([\w]+)',\s*'(.+)'\s*,\s*'(.+)'\s*(.+)/", $vueSource, $singleQuoteMatches);
-			preg_match_all("/\Wn\s*\(\s*\"([\w]+)\",\s*\"(.+)\"\s*,\s*\"(.+)\"\s*(.+)/", $vueSource, $doubleQuoteMatches);
-			preg_match_all("/\Wn\s*\(\s*\'([\w]+)\'\s*,\s*\`(.+)\`\s*,\s*\`(.+)\`\s*\)/msU", $vueSource, $templateQuoteMatches);
-			$matches1 = array_merge($singleQuoteMatches[2], $doubleQuoteMatches[2], $templateQuoteMatches[2]);
-			$matches2 = array_merge($singleQuoteMatches[3], $doubleQuoteMatches[3], $templateQuoteMatches[3]);
-			foreach (array_keys($matches1) as $k) {
-				$match1 = $matches1[$k];
-				$match2 = $matches2[$k];
-				$fakeFileContent .= "n('" . $this->name . "', '" . preg_replace('/\s+/', ' ', $match1) . "', '" . preg_replace('/\s+/', ' ', $match2) . "');" . PHP_EOL;
+			// n - Plural Translations
+			$nRegexArray = [
+				"/\Wn\s*\(\s*'([\w]+)',\s*'(.+)'\s*,\s*'(.+)'\s*(.+)/", // Single Quotes
+				"/\Wn\s*\(\s*\"([\w]+)\",\s*\"(.+)\"\s*,\s*\"(.+)\"\s*(.+)/", // Double Quotes
+				"/\Wn\s*\(\s*\'([\w]+)\'\s*,\s*\`(.+)\`\s*,\s*\`(.+)\`\s*\)/msU" // Template Quotes
+			];
+			foreach($nRegexArray as $regex) {
+				$regexMatches = preg_grep($regex, $vueSource);
+
+				foreach ($regexMatches as $lineNum => $match) {
+					// Check for comment in previous line. Either HTML or JS comment. HTML-Comments terminate with '-->', JS do not
+					if(preg_match("/\W(TRANSLATORS)\s(.+)(-->)/", $vueSource[$lineNum-1], $commentSplit)
+						|| preg_match("/\W(TRANSLATORS)\s(.+)/", $vueSource[$lineNum-1], $commentSplit)) {
+			
+						// Insert comment
+						$fakeFileContent .= "// TRANSLATORS " . preg_replace('/\s+/', ' ', $commentSplit[2]) . PHP_EOL;
+					}
+
+					// Insert translation-function
+					preg_match($regex, $match, $matchSplit);
+					$fakeFileContent .= "n('" . $this->name . "', '" . preg_replace('/\s+/', ' ', $matchSplit[2]) . "', '" . preg_replace('/\s+/', ' ', $matchSplit[3]) . "');" . PHP_EOL;
+				}
 			}
 		}
 
