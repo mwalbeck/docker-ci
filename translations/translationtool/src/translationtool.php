@@ -336,12 +336,11 @@ class TranslatableApp {
 				$regexMatches = preg_grep($regex, $vueSource);
 
 				foreach ($regexMatches as $lineNum => $match) {
-					// Check for comment in previous line. Either HTML or JS comment. HTML-Comments terminate with '-->', JS do not
-					if(preg_match("/\W(TRANSLATORS)\s(.+)(-->)/", $vueSource[$lineNum-1], $commentSplit)
-						|| preg_match("/\W(TRANSLATORS)\s(.+)/", $vueSource[$lineNum-1], $commentSplit)) {
-
-						// Insert comment
-						$fakeFileContent .= "// TRANSLATORS " . preg_replace('/\s+/', ' ', $commentSplit[2]) . PHP_EOL;
+					// Check for comment in previous line. Either HTML or JS comment.
+					if(preg_match("/\W(\/\/|\/\*|<!--)\s(TRANSLATORS)\s(.+)/", $vueSource[$lineNum-1], $commentSplit)) {
+						// Remove possible comment-end-tags and insert comment
+						$commentText = preg_replace('/\s*(-->|\*\/)\s*/', '', $commentSplit[3]);
+						$fakeFileContent .= "// TRANSLATORS " . preg_replace('/\s+/', ' ', $commentText) . PHP_EOL;
 					}
 
 					// Insert translation-function
@@ -360,12 +359,11 @@ class TranslatableApp {
 				$regexMatches = preg_grep($regex, $vueSource);
 
 				foreach ($regexMatches as $lineNum => $match) {
-					// Check for comment in previous line. Either HTML or JS comment. HTML-Comments terminate with '-->', JS do not
-					if(preg_match("/\W(TRANSLATORS)\s(.+)(-->)/", $vueSource[$lineNum-1], $commentSplit)
-						|| preg_match("/\W(TRANSLATORS)\s(.+)/", $vueSource[$lineNum-1], $commentSplit)) {
-			
-						// Insert comment
-						$fakeFileContent .= "// TRANSLATORS " . preg_replace('/\s+/', ' ', $commentSplit[2]) . PHP_EOL;
+					// Check for comment in previous line. Either HTML or JS comment.
+					if(preg_match("/\W(\/\/|\/\*|<!--)\s(TRANSLATORS)\s(.+)/", $vueSource[$lineNum-1], $commentSplit)) {
+						// Remove possible comment-end-tags and insert comment
+						$commentText = preg_replace('/\s*(-->|\*\/)\s*/', '', $commentSplit[3]);
+						$fakeFileContent .= "// TRANSLATORS " . preg_replace('/\s+/', ' ', $commentText) . PHP_EOL;
 					}
 
 					// Insert translation-function
